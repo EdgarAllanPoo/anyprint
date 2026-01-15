@@ -54,7 +54,8 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
   const price = copies * pages * PRICE_PER_PAGE;
   const code = await generateUniqueNumericCode(pool, 8);
 
-  const objectName = `${code}-${file.originalname}`;
+  const safeFilename = encodeURIComponent(file.originalname);
+  const objectName = `${code}-${safeFilename}`;
 
   try {
     await s3.send(new PutObjectCommand({
