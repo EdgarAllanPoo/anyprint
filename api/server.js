@@ -54,8 +54,7 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
   const price = copies * pages * PRICE_PER_PAGE;
   const code = await generateUniqueNumericCode(pool, 8);
 
-  const safeFilename = encodeURIComponent(file.originalname);
-  const objectName = `${code}-${safeFilename}`;
+  const objectName = `${code}-${file.originalname}`;
 
   try {
     await s3.send(new PutObjectCommand({
@@ -65,7 +64,7 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
       ContentType: file.mimetype
     }));
 
-    const fileUrl = `${process.env.FILE_BASE_URL}/print-jobs/${objectName}`;
+    const fileUrl = `${process.env.FILE_BASE_URL}/print-jobs/${encodeURIComponent(objectName)}`;
 
     await pool.query(
       `INSERT INTO jobs (code, filename, file_url, copies, pages, price)
