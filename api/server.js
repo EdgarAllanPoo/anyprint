@@ -64,7 +64,7 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
       ContentType: file.mimetype
     }));
 
-    const fileUrl = `http://localhost:9000/print-jobs/${objectName}`;
+    const fileUrl = `${process.env.FILE_BASE_URL}/print-jobs/${objectName}`;
 
     await pool.query(
       `INSERT INTO jobs (code, filename, file_url, copies, pages, price)
