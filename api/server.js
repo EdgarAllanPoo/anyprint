@@ -87,6 +87,31 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
   }
 });
 
+// GET /jobs/:code - get job for printing
+app.get('/jobs/:code', async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT * FROM jobs WHERE code=$1',
+    [req.params.code]
+  );
+
+  if (!rows.length) return res.sendStatus(404);
+
+  const job = rows[0];
+
+  if (job.status !== 'PAID') {
+    return res.status(402).json({ error: 'Job not paid yet' });
+  }
+
+  res.json({
+    code: job.code,
+    filename: job.filename,
+    fileUrl: job.file_url,
+    copies: job.copies,
+    pages: job.pages
+  });
+});
+
+
 // POST /payments/callback - create a webhook for midtrans
 app.post('/payments/callback', async (req, res) => {
   const notification = req.body;
