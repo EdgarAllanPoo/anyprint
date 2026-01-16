@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 
 const ALLOWED_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  "application/vnd.openxmlformats-offocument.presentationml.presentation"
 ]
 
 export default function Home() {
@@ -49,10 +50,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#050b1f] flex items-center justify-center p-4 text-white">
       <div className="bg-[#0b1b3a] p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-5">
-
-        <h1 className="text-3xl font-bold text-center tracking-wide">
-          AnyPrint
-        </h1>
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <div className="relative w-[180px] h-[60px]">
+            <Image
+              src="/logo.png"
+              alt="AnyPrint Logo"
+              fill
+              className="object-contain drop-shadow-[0_0_10px_rgba(96,165,250,0.25)]"
+              priority
+            />
+          </div>
+        </div>
 
         <p className="text-sm text-blue-200 text-center">
           Upload your document and pay securely
