@@ -9,6 +9,7 @@ const { generateUniqueNumericCode } = require("./utils/codeGenerator");
 const app = express();
 app.use(cors({
   origin: [/anyprint\.id$/]
+  // origin: process.env.FRONTEND_URL
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -142,6 +143,44 @@ app.post('/payments/callback', async (req, res) => {
   }
 
   res.sendStatus(200);
+});
+
+// POST /payments/demo-settle/:code
+app.post('/payments/demo-settle/:code', async (req, res) => {
+  if (process.env.IS_DEMO !== "true") {
+    return res.status(403).json({ error: "Demo mode is disabled" });
+  }
+
+  const code = req.params.code;
+
+  const { rows } = await pool.query(
+    "SELECT * FROM jobs WHERE code=$1",
+    [code]
+  );
+
+  if (!rows.length) return res.sendStatus(404);
+
+  const job = rows[0];
+
+  if (job.status === "PAID") {
+    return res.json({ message: "Already paid" });
+  }
+
+  await pool.query(
+    `UPDATE jobs 
+     SET status='PAID', 
+         paid_at=NOW(), 
+         payment_ref='DEMO_PAYMENT'
+     WHERE code=$1`,
+    [code]
+  );
+
+  logger.info({
+    code,
+    mode: "DEMO"
+  }, "JOB_DEMO_PAID");
+
+  res.json({ success: true });
 });
 
 // POST /payments/:code - create a new payment to midtrans
