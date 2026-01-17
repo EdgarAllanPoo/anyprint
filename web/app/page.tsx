@@ -6,7 +6,9 @@ import Image from "next/image"
 const ALLOWED_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "image/jpeg",
+  "image/png"
 ]
 
 export default function Home() {
@@ -37,7 +39,7 @@ export default function Home() {
     if (!f) return
 
     if (!ALLOWED_TYPES.includes(f.type)) {
-      setError("Unsupported file type. Please upload PDF, DOCX, or PPTX.")
+      setError("Unsupported file type. Please upload PDF, DOCX, PPTX, JPG, or PNG.")
       setFile(null)
       return
     }
@@ -50,6 +52,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#050b1f] flex items-center justify-center p-4 text-white">
       <div className="bg-[#0b1b3a] p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-5">
+
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <div className="relative w-[180px] h-[60px]">
@@ -77,7 +80,7 @@ export default function Home() {
           <label className="block cursor-pointer">
             <input
               type="file"
-              accept=".pdf,.docx,.pptx"
+              accept=".pdf,.docx,.pptx,.jpg,.jpeg,.png"
               className="hidden"
               onChange={e => onFileChange(e.target.files?.[0])}
               disabled={loading}
@@ -97,7 +100,7 @@ export default function Home() {
               )}
 
               <div className="text-sm text-blue-300">
-                PDF, DOCX, PPTX supported
+                PDF, DOCX, PPTX, JPG, PNG supported
               </div>
             </div>
           </label>
