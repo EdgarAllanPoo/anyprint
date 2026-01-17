@@ -33,60 +33,94 @@ const { PutObjectCommand } = require('@aws-sdk/client-s3');
 const snap = require('./payments');
 
 // page counter
+const path = require("path");
+const fs = require("fs/promises");
+const os = require("os");
+const { convertToPdf } = require("./utils/convertToPdf");
 const { PdfCounter } = require("page-count");
 
 // Constant 
 const PRICE_PER_PAGE = 500;
 
-// POST /jobs - create a new job
 app.post('/jobs', upload.single('file'), async (req, res) => {
   const file = req.file;
-  if (!file) return res.status(400).send('No file uploaded.');
+  if (!file) return res.status(400).json({ error: "No file uploaded" });
 
-  const copies = parseInt(req.body.copies || '1');
-  let pages;
-  try {
-    pages = await PdfCounter.count(file.buffer);
-  } catch (e) {
-    console.error(e);
-    return res.status(400).send('Invalid PDF file.');
+  // ✅ MIME whitelist
+  const allowedTypes = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ];
+
+  if (!allowedTypes.includes(file.mimetype)) {
+    return res.status(400).json({ error: "Unsupported file type" });
   }
 
-  const price = copies * pages * PRICE_PER_PAGE;
-  const code = await generateUniqueNumericCode(pool, 8);
+  const copies = parseInt(req.body.copies || "1");
 
-  const objectName = `${code}-${file.originalname}`;
+  let pdfBuffer = file.buffer;
+  let filename = file.originalname;
 
   try {
+    // ✅ Convert DOCX/PPTX → PDF
+    if (
+      file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      file.mimetype === "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    ) {
+      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "anyprint-"));
+      const inputPath = path.join(tmpDir, file.originalname);
+
+      await fs.writeFile(inputPath, file.buffer);
+
+      const pdfPath = await convertToPdf(inputPath, tmpDir);
+      pdfBuffer = await fs.readFile(pdfPath);
+
+      filename = file.originalname.replace(/\.(docx|pptx)$/i, ".pdf");
+
+      // cleanup temp files
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+
+    // ✅ Count PDF pages
+    const pages = await PdfCounter.count(pdfBuffer);
+    const price = copies * pages * PRICE_PER_PAGE;
+    const code = await generateUniqueNumericCode(pool, 8);
+
+    const objectName = `${code}-${filename}`;
+
+    // ✅ Upload PDF to S3
     await s3.send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET,
       Key: objectName,
-      Body: file.buffer,
-      ContentType: file.mimetype
+      Body: pdfBuffer,
+      ContentType: "application/pdf"
     }));
 
     const fileUrl = `${process.env.FILE_BASE_URL}/print-jobs/${encodeURIComponent(objectName)}`;
 
+    // ✅ Save job to DB
     await pool.query(
       `INSERT INTO jobs (code, filename, file_url, copies, pages, price)
-      VALUES ($1, $2, $3, $4, $5, $6)`,
-      [code, file.originalname, fileUrl, copies, pages, price]
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [code, filename, fileUrl, copies, pages, price]
     );
 
-    logger.info({
+    res.json({
       code,
       copies,
       pages,
+      pricePerPage: PRICE_PER_PAGE,
       price,
-      filename: file.originalname
-    }, 'JOB_CREATED');
+      fileUrl
+    });
 
-    res.json({ code, copies, pages, pricePerPage: PRICE_PER_PAGE, price, fileUrl });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Upload failed.');
+    console.error("JOB_UPLOAD_ERROR:", err);
+    res.status(500).json({ error: "File processing failed" });
   }
 });
+
 
 // GET /jobs/:code - get job for printing
 app.get('/jobs/:code', async (req, res) => {
@@ -99,12 +133,12 @@ app.get('/jobs/:code', async (req, res) => {
 
   const job = rows[0];
 
-  if (job.status !== 'PAID') {
-    return res.status(402).json({ error: 'Job not paid yet' });
+  if (job.status === 'USED') {
+      return res.status(409).json({ error: 'Job already printed' });
   }
 
-  if (job.status === 'USED') {
-    return res.status(409).json({ error: 'Job already printed' });
+  if (job.status !== 'PAID') {
+    return res.status(402).json({ error: 'Job not paid yet' });
   }
 
   await pool.query(
@@ -174,6 +208,10 @@ app.post('/payments/demo-settle/:code', async (req, res) => {
 
   if (job.status === "PAID") {
     return res.json({ message: "Already paid" });
+  }
+
+  if (job.status === "USED") {
+    return res.json({ message: "Already used" });
   }
 
   await pool.query(

@@ -6,7 +6,7 @@ import Image from "next/image"
 const ALLOWED_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-offocument.presentationml.presentation"
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 ]
 
 export default function Home() {
