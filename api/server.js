@@ -103,6 +103,17 @@ app.get('/jobs/:code', async (req, res) => {
     return res.status(402).json({ error: 'Job not paid yet' });
   }
 
+  if (job.status === 'USED') {
+    return res.status(409).json({ error: 'Job already printed' });
+  }
+
+  await pool.query(
+    `UPDATE jobs 
+    SET status='USED', printed_at=NOW()
+    WHERE code=$1 AND status='PAID'`,
+    [job.code]
+  );
+
   res.json({
     code: job.code,
     filename: job.filename,
@@ -111,7 +122,6 @@ app.get('/jobs/:code', async (req, res) => {
     pages: job.pages
   });
 });
-
 
 // POST /payments/callback - create a webhook for midtrans
 app.post('/payments/callback', async (req, res) => {
