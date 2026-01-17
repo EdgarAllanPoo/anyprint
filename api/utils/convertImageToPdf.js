@@ -3,8 +3,8 @@ const path = require("path");
 
 const IM_PATH =
   process.platform === "darwin"
-    ? "magick"    // macOS
-    : "magick";   // linux server (ImageMagick 7)
+    ? "magick"    // macOS (ImageMagick 7)
+    : "convert";   // linux server 22.04 (ImageMagick 6)
 
 async function convertImageToPdf(inputPath, outputDir) {
   return new Promise((resolve, reject) => {
