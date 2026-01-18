@@ -1,10 +1,11 @@
 const { execFile } = require("child_process");
 const path = require("path");
 
-const IM_PATH =
-  process.platform === "darwin"
-    ? "magick"    // macOS (ImageMagick 7)
-    : "convert";   // linux server 22.04 (ImageMagick 6)
+const IM_PATH = "convert"; // Ubuntu uses convert-im6 alias
+
+// A4 @ 300 DPI
+const A4_WIDTH = 2480;
+const A4_HEIGHT = 3508;
 
 async function convertImageToPdf(inputPath, outputDir) {
   return new Promise((resolve, reject) => {
@@ -15,7 +16,15 @@ async function convertImageToPdf(inputPath, outputDir) {
 
     execFile(
       IM_PATH,
-      ["-density", "300", inputPath, outputFile],
+      [
+        inputPath,
+        "-units", "PixelsPerInch",
+        "-density", "300",
+        "-resize", `${A4_WIDTH}x${A4_HEIGHT}`,
+        "-gravity", "center",
+        "-extent", `${A4_WIDTH}x${A4_HEIGHT}`,
+        outputFile
+      ],
       (error) => {
         if (error) return reject(error);
         resolve(outputFile);
