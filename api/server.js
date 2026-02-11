@@ -224,7 +224,7 @@ app.post('/payments/callback/doku', async (req, res) => {
   const requestTimestamp = req.header("Request-Timestamp");
   const signatureHeader = req.header("Signature");
 
-  const requestTarget = "/payments/callback/doku";
+  const requestTarget = "/api/payments/callback/doku";
 
   if (!clientId || !requestId || !requestTimestamp || !signatureHeader) {
     return res.sendStatus(400);
