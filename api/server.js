@@ -4,6 +4,10 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { generateUniqueNumericCode } = require("./utils/codeGenerator");
+const {
+  generateDigest,
+  generateSignature
+} = require("./utils/dokuSignature");
 
 // Server setup
 const app = express();
@@ -11,7 +15,15 @@ app.use(cors({
   origin: [/anyprint\.id$/]
   // origin: process.env.FRONTEND_URL
 }));
-app.use(express.json());
+
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    }
+  })
+);
+
 app.use(express.urlencoded({ extended: false }));
 
 // Logger setup
@@ -30,7 +42,7 @@ const s3 = require('./storage');
 const { PutObjectCommand } = require('@aws-sdk/client-s3');
 
 // midtrans setup
-const snap = require('./payments');
+const payments = require('./payments');
 
 // page counter
 const path = require("path");
@@ -169,8 +181,8 @@ app.get('/jobs/:code', async (req, res) => {
   });
 });
 
-// POST /payments/callback - create a webhook for midtrans
-app.post('/payments/callback', async (req, res) => {
+// POST /payments/callback/midtrans - create a webhook for midtrans
+app.post('/payments/callback/midtrans', async (req, res) => {
   const notification = req.body;
   const code = notification.order_id;
 
@@ -196,6 +208,82 @@ app.post('/payments/callback', async (req, res) => {
       code,
       midtransId: notification.transaction_id
     }, 'JOB_PAID');
+  }
+
+  res.sendStatus(200);
+});
+
+// POST /payments/callback/doku - QRIS
+app.post('/payments/callback/doku', async (req, res) => {
+  const body = req.body;
+  const bodyString = req.rawBody;
+
+  // ---- headers from DOKU ----
+  const clientId = req.header("Client-Id");
+  const requestId = req.header("Request-Id");
+  const requestTimestamp = req.header("Request-Timestamp");
+  const signatureHeader = req.header("Signature");
+
+  const requestTarget = "/payments/callback/doku";
+
+  if (!clientId || !requestId || !requestTimestamp || !signatureHeader) {
+    return res.sendStatus(400);
+  }
+
+  // ---- signature verification (shared util) ----
+  const digest = generateDigest(bodyString);
+
+  const expectedSignature = generateSignature({
+    clientId,
+    requestId,
+    requestTimestamp,
+    requestTarget,
+    digest,
+    secretKey: process.env.DOKU_SECRET_KEY
+  });
+
+  if (expectedSignature !== signatureHeader) {
+    logger.warn(
+      { requestId },
+      "DOKU_CALLBACK_INVALID_SIGNATURE"
+    );
+    return res.sendStatus(403);
+  }
+
+  // ---- QRIS-specific handling ----
+  if (body?.service?.id !== "QRIS") {
+    return res.sendStatus(200);
+  }
+
+  const code = body?.order?.invoice_number;
+  const status = body?.transaction?.status;
+
+  if (status === "SUCCESS") {
+    const { rows } = await pool.query(
+      "SELECT price, status FROM jobs WHERE code=$1",
+      [code]
+    );
+
+    if (!rows.length) return res.sendStatus(404);
+
+    // Extra safety: amount check
+    if (Number(rows[0].price) !== Number(body.order.amount)) {
+      return res.sendStatus(400);
+    }
+
+    await pool.query(
+      `UPDATE jobs
+       SET status='PAID',
+           paid_at=NOW(),
+           payment_ref=$1
+       WHERE code=$2 AND status!='PAID'`,
+      [body.emoney_payment?.approval_code, code]
+    );
+
+    logger.info(
+      { code, provider: "DOKU" },
+      "JOB_PAID"
+    );
   }
 
   res.sendStatus(200);
@@ -243,28 +331,25 @@ app.post('/payments/demo-settle/:code', async (req, res) => {
   res.json({ success: true });
 });
 
-// POST /payments/:code - create a new payment to midtrans
+// POST /payments/:code - create a new payment
 app.post('/payments/:code', async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM jobs WHERE code=$1', [req.params.code]);
+  const { rows } = await pool.query(
+    'SELECT * FROM jobs WHERE code=$1',
+    [req.params.code]
+  );
   if (!rows.length) return res.sendStatus(404);
 
   const job = rows[0];
 
-  const transaction = {
-    transaction_details: {
-      order_id: job.code,
-      gross_amount: job.price
-    }
-  };
-
-  const token = await snap.createTransactionToken(transaction);
+  const payment = await payments.createPayment(job);
 
   logger.info({
     code: job.code,
-    price: job.price
-  }, 'PAYMENT_TOKEN_CREATED');
+    price: job.price,
+    provider: payment.provider
+  }, 'PAYMENT_CREATED');
 
-  res.json({ token });
+  res.json(payment);
 });
 
 const PORT = process.env.PORT;
