@@ -54,7 +54,7 @@ const { PdfCounter } = require("page-count");
 
 // Constant 
 const PRICE = {
-  BW: 700,
+  BW: 750,
   COLOR: 1500
 };
 

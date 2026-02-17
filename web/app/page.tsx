@@ -151,7 +151,7 @@ export default function Home() {
               }`}
             >
               Black & White
-              <div className="text-xs opacity-80">Rp700 / page</div>
+              <div className="text-xs opacity-80">Rp750 / page</div>
             </button>
 
             <button
