@@ -53,7 +53,10 @@ const { convertImageToPdf } = require("./utils/convertImageToPdf");
 const { PdfCounter } = require("page-count");
 
 // Constant 
-const PRICE_PER_PAGE = 500;
+const PRICE = {
+  BW: 700,
+  COLOR: 1500
+};
 
 // Supported MIME types
 const allowedTypes = [
@@ -73,6 +76,12 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
   }
 
   const copies = parseInt(req.body.copies || "1");
+
+  const printMode = (req.body.printMode || "BW").toUpperCase();
+
+  if (!PRICE[printMode]) {
+    return res.status(400).json({ error: "Invalid print mode" });
+  }
 
   let pdfBuffer = file.buffer;
   let filename = file.originalname;
@@ -105,9 +114,13 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
 
     // Count pages from final PDF
     const pages = await PdfCounter.count(pdfBuffer);
-    const price = copies * pages * PRICE_PER_PAGE;
-    const code = await generateUniqueNumericCode(pool, 8);
 
+    // Price calculation
+    const pricePerPage = PRICE[printMode];
+    const price = copies * pages * pricePerPage;
+        
+    // Code Generation
+    const code = await generateUniqueNumericCode(pool, 8);
     const objectName = `${code}-${filename}`;
 
     // Upload PDF to S3
@@ -122,9 +135,9 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
 
     // Save job
     await pool.query(
-      `INSERT INTO jobs (code, filename, file_url, copies, pages, price)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [code, filename, fileUrl, copies, pages, price]
+      `INSERT INTO jobs (code, filename, file_url, copies, pages, price, print_mode)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [code, filename, fileUrl, copies, pages, price, printMode]
     );
 
     // cleanup temp files
@@ -134,7 +147,8 @@ app.post('/jobs', upload.single('file'), async (req, res) => {
       code,
       copies,
       pages,
-      pricePerPage: PRICE_PER_PAGE,
+      printMode,
+      pricePerPage,
       price,
       fileUrl
     });
@@ -177,7 +191,8 @@ app.get('/jobs/:code', async (req, res) => {
     filename: job.filename,
     fileUrl: job.file_url,
     copies: job.copies,
-    pages: job.pages
+    pages: job.pages,
+    printMode: job.print_mode
   });
 });
 
