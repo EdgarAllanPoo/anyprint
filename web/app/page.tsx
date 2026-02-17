@@ -14,6 +14,7 @@ const ALLOWED_TYPES = [
 export default function Home() {
   const [file, setFile] = useState<File | null>(null)
   const [copies, setCopies] = useState(1)
+  const [printMode, setPrintMode] = useState<"BW" | "COLOR">("BW")
   const [job, setJob] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +26,7 @@ export default function Home() {
     const form = new FormData()
     form.append("file", file)
     form.append("copies", String(copies))
+    form.append("printMode", printMode)
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/jobs`, {
       method: "POST",
@@ -135,6 +137,37 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Print Mode */}
+        <div className="bg-[#08132d] border border-blue-400/30 rounded-xl p-4 space-y-3">
+          <div className="text-sm text-blue-300 text-center">Print Mode</div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setPrintMode("BW")}
+              className={`flex-1 py-3 rounded-lg font-semibold transition ${
+                printMode === "BW"
+                  ? "bg-blue-600"
+                  : "bg-blue-900/40 hover:bg-blue-800/50"
+              }`}
+            >
+              Black & White
+              <div className="text-xs opacity-80">Rp700 / page</div>
+            </button>
+
+            <button
+              onClick={() => setPrintMode("COLOR")}
+              className={`flex-1 py-3 rounded-lg font-semibold transition ${
+                printMode === "COLOR"
+                  ? "bg-blue-600"
+                  : "bg-blue-900/40 hover:bg-blue-800/50"
+              }`}
+            >
+              Color
+              <div className="text-xs opacity-80">Rp1500 / page</div>
+            </button>
+          </div>
+        </div>
+
         {/* Submit */}
         <button
           onClick={submit}
@@ -162,6 +195,11 @@ export default function Home() {
             <div className="flex justify-between">
               <span className="text-blue-200">Copies</span>
               <span>{job.copies}</span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-blue-200">Mode</span>
+              <span>{job.printMode === "BW" ? "Black & White" : "Color"}</span>
             </div>
 
             <div className="flex justify-between">
