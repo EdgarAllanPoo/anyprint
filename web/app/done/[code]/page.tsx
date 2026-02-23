@@ -15,7 +15,7 @@ export default function Done() {
           <div className="relative w-[160px] h-[48px]">
             <Image
               src="/logo.png"
-              alt="AnyPrint Logo"
+              alt="Anyprint Logo"
               fill
               className="object-contain drop-shadow-[0_0_10px_rgba(96,165,250,0.25)]"
               priority

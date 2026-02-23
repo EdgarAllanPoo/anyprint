@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import WhatsappFloating from "@/components/WhatsappFloating"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AnyPrint",
+  title: "Anyprint",
   description: "Print vending web",
 };
 
@@ -33,6 +34,7 @@ export default function RootLayout({
 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
+        <WhatsappFloating />
       </body>
     </html>
   );
