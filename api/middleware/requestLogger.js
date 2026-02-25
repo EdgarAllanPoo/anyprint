@@ -1,5 +1,5 @@
 const { v4: uuid } = require('uuid');
-const logger = require('../logger');
+const logger = require('../config/logger');
 
 module.exports = (req, res, next) => {
   const id = uuid();
