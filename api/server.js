@@ -7,12 +7,14 @@ const requestLogger = require('./middleware/requestLogger');
 
 const jobsRoutes = require('./routes/job.routes');
 const paymentsRoutes = require('./routes/payment.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
 app.use(cors({
-  origin: [/anyprint\.id$/]
-  // origin: process.env.FRONTEND_URL
+  origin: [/anyprint\.id$/],
+  // origin: process.env.FRONTEND_URL,
+  credentials: true
 }));
 
 app.use(
@@ -29,6 +31,7 @@ app.use(requestLogger);
 
 app.use('/jobs', jobsRoutes);
 app.use('/payments', paymentsRoutes);
+app.use('/admin', adminRoutes);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
