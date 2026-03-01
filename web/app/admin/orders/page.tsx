@@ -7,6 +7,9 @@ type Order = {
   price: number;
   status: string;
   created_at: string;
+  copies: number;
+  pages: number;
+  print_mode: string;
 };
 
 export default function OrdersPage() {
@@ -65,6 +68,18 @@ export default function OrdersPage() {
     setPage(1);
   };
 
+  const handleExport = () => {
+    const params = new URLSearchParams();
+
+    if (status) params.append("status", status);
+    if (startDate) params.append("start", startDate);
+    if (endDate) params.append("end", endDate);
+
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/admin/orders/export?${params.toString()}`;
+
+    window.open(url, "_blank");
+  };
+
   return (
     <div className="space-y-8">
 
@@ -79,7 +94,6 @@ export default function OrdersPage() {
       {/* Filters */}
       <div className="bg-[#0b1b3a] border border-blue-400/20 rounded-2xl p-6 flex flex-wrap gap-4 items-end">
 
-        {/* Status Filter */}
         <div className="flex flex-col text-sm">
           <label className="text-blue-300 mb-1">Status</label>
           <select
@@ -97,7 +111,6 @@ export default function OrdersPage() {
           </select>
         </div>
 
-        {/* Start Date */}
         <div className="flex flex-col text-sm">
           <label className="text-blue-300 mb-1">Start Date</label>
           <input
@@ -111,7 +124,6 @@ export default function OrdersPage() {
           />
         </div>
 
-        {/* End Date */}
         <div className="flex flex-col text-sm">
           <label className="text-blue-300 mb-1">End Date</label>
           <input
@@ -125,12 +137,18 @@ export default function OrdersPage() {
           />
         </div>
 
-        {/* Reset Button */}
         <button
           onClick={resetFilters}
           className="px-4 py-2 bg-blue-900/40 hover:bg-blue-800/60 rounded-lg transition text-sm"
         >
           Reset
+        </button>
+
+        <button
+          onClick={handleExport}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg transition text-sm"
+        >
+          Export CSV
         </button>
       </div>
 
@@ -140,6 +158,9 @@ export default function OrdersPage() {
           <thead className="bg-blue-900/20 text-blue-300">
             <tr>
               <th className="text-left p-4">Code</th>
+              <th className="text-left p-4">Mode</th>
+              <th className="text-left p-4">Copies</th>
+              <th className="text-left p-4">Pages</th>
               <th className="text-left p-4">Price</th>
               <th className="text-left p-4">Status</th>
               <th className="text-left p-4">Date</th>
@@ -147,10 +168,9 @@ export default function OrdersPage() {
           </thead>
           <tbody className="relative">
 
-            {/* Smooth overlay loading shimmer */}
             {loading && (
               <tr>
-                <td colSpan={4} className="p-0">
+                <td colSpan={7} className="p-0">
                   <div className="absolute inset-0 bg-[#0b1b3a]/70 backdrop-blur-sm flex items-center justify-center z-10">
                     <div className="flex items-center gap-3 text-blue-300 text-sm animate-pulse">
                       <div className="w-3 h-3 rounded-full bg-blue-400 animate-bounce" />
@@ -161,27 +181,21 @@ export default function OrdersPage() {
               </tr>
             )}
 
-            {/* Skeleton rows while loading */}
             {loading
               ? Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-t border-blue-400/10 animate-pulse">
-                    <td className="p-4">
-                      <div className="h-4 w-24 bg-blue-900/40 rounded" />
-                    </td>
-                    <td className="p-4">
-                      <div className="h-4 w-20 bg-blue-900/40 rounded" />
-                    </td>
-                    <td className="p-4">
-                      <div className="h-6 w-16 bg-blue-900/40 rounded-full" />
-                    </td>
-                    <td className="p-4">
-                      <div className="h-4 w-32 bg-blue-900/40 rounded" />
-                    </td>
+                    <td className="p-4"><div className="h-4 w-24 bg-blue-900/40 rounded" /></td>
+                    <td className="p-4"><div className="h-4 w-16 bg-blue-900/40 rounded" /></td>
+                    <td className="p-4"><div className="h-4 w-10 bg-blue-900/40 rounded" /></td>
+                    <td className="p-4"><div className="h-4 w-10 bg-blue-900/40 rounded" /></td>
+                    <td className="p-4"><div className="h-4 w-20 bg-blue-900/40 rounded" /></td>
+                    <td className="p-4"><div className="h-6 w-16 bg-blue-900/40 rounded-full" /></td>
+                    <td className="p-4"><div className="h-4 w-32 bg-blue-900/40 rounded" /></td>
                   </tr>
                 ))
               : orders.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="p-6 text-center text-blue-300">
+                    <td colSpan={7} className="p-6 text-center text-blue-300">
                       No orders found.
                     </td>
                   </tr>
@@ -194,12 +208,27 @@ export default function OrdersPage() {
                       <td className="p-4 font-mono tracking-wide text-blue-200">
                         {order.code}
                       </td>
+
+                      <td className="p-4">
+                        <PrintModeBadge mode={order.print_mode} />
+                      </td>
+
+                      <td className="p-4 text-blue-200">
+                        {order.copies}
+                      </td>
+
+                      <td className="p-4 text-blue-200">
+                        {order.pages}
+                      </td>
+
                       <td className="p-4">
                         Rp {order.price.toLocaleString("id-ID")}
                       </td>
+
                       <td className="p-4">
                         <StatusBadge status={order.status} />
                       </td>
+
                       <td className="p-4 text-blue-200">
                         {new Date(order.created_at).toLocaleString()}
                       </td>
@@ -210,7 +239,6 @@ export default function OrdersPage() {
         </table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center text-sm">
           <span className="text-blue-300">
@@ -276,6 +304,27 @@ function StatusBadge({ status }: { status: string }) {
       }`}
     >
       {status}
+    </span>
+  );
+}
+
+function PrintModeBadge({ mode }: { mode: string }) {
+  const base =
+    "px-3 py-1 rounded-full text-xs font-semibold border inline-block";
+
+  const styles: Record<string, string> = {
+    BW: "bg-gray-500/10 text-gray-300 border-gray-500/30",
+    COLOR: "bg-pink-500/10 text-pink-400 border-pink-500/30",
+  };
+
+  return (
+    <span
+      className={`${base} ${
+        styles[mode] ||
+        "bg-gray-500/10 text-gray-300 border-gray-500/30"
+      }`}
+    >
+      {mode}
     </span>
   );
 }

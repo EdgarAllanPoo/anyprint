@@ -54,7 +54,7 @@ exports.getOrders = async (query) => {
 
   const { rows } = await pool.query(
     `
-    SELECT code, filename, copies, pages, price, status, created_at
+    SELECT code, filename, copies, pages, print_mode, price, status, created_at
     FROM jobs
     WHERE created_at BETWEEN $1 AND $2
       AND ($3::text IS NULL OR status = $3)
@@ -86,7 +86,20 @@ exports.exportOrders = async (query) => {
 
   const { rows } = await pool.query(
     `
-    SELECT code, filename, copies, pages, price, status, created_at
+    SELECT
+      id,
+      code,
+      filename,
+      file_url,
+      copies,
+      pages,
+      print_mode,
+      price,
+      status,
+      payment_ref,
+      created_at,
+      paid_at,
+      printed_at
     FROM jobs
     WHERE created_at BETWEEN $1 AND $2
       AND ($3::text IS NULL OR status = $3)
@@ -95,25 +108,53 @@ exports.exportOrders = async (query) => {
     [start, end, status]
   );
 
+  // Proper CSV escaping
+  const escapeCsv = (value) => {
+    if (value === null || value === undefined) return "";
+    const stringValue = String(value);
+
+    if (
+      stringValue.includes(",") ||
+      stringValue.includes("\n") ||
+      stringValue.includes('"')
+    ) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+
+    return stringValue;
+  };
+
   const headers = [
+    "ID",
     "Code",
     "Filename",
+    "File URL",
     "Copies",
     "Pages",
+    "Print Mode",
     "Price",
     "Status",
-    "Created At"
+    "Payment Ref",
+    "Created At",
+    "Paid At",
+    "Printed At"
   ];
 
   const csvRows = rows.map(row => [
+    row.id,
     row.code,
     row.filename,
+    row.file_url,
     row.copies,
     row.pages,
+    row.print_mode,
     row.price,
     row.status,
-    row.created_at
-  ]);
+    row.payment_ref,
+    row.created_at,
+    row.paid_at,
+    row.printed_at
+  ].map(escapeCsv));
 
   const csv = [
     headers.join(","),

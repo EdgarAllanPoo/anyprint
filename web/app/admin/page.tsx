@@ -117,15 +117,15 @@ export default function AdminDashboard() {
             value={summary.paid_orders}
           />
           <StatCard
-            title="Printed"
+            title="Printed Orders"
             value={summary.used_orders}
           />
           <StatCard
-            title="Printed BW"
+            title="Printed BW Orders"
             value={summary.used_bw_jobs}
           />
           <StatCard
-            title="Printed Color"
+            title="Printed Color Orders"
             value={summary.used_color_jobs}
           />          
           <StatCard
