@@ -6,6 +6,8 @@ type Summary = {
   total_orders: number;
   paid_orders: number;
   used_orders: number;
+  used_bw_jobs: number;
+  used_color_jobs: number;
   total_revenue: number;
 };
 
@@ -105,7 +107,7 @@ export default function AdminDashboard() {
       {loading || !summary ? (
         <LoadingGrid />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatCard
             title="Total Orders"
             value={summary.total_orders}
@@ -118,6 +120,14 @@ export default function AdminDashboard() {
             title="Printed"
             value={summary.used_orders}
           />
+          <StatCard
+            title="Printed BW"
+            value={summary.used_bw_jobs}
+          />
+          <StatCard
+            title="Printed Color"
+            value={summary.used_color_jobs}
+          />          
           <StatCard
             title="Total Revenue"
             value={formatCurrency(summary.total_revenue)}
@@ -154,7 +164,7 @@ function StatCard({
 
 function LoadingGrid() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {[...Array(4)].map((_, i) => (
         <div
           key={i}

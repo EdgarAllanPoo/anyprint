@@ -24,6 +24,15 @@ exports.getSalesSummary = async (query) => {
       COUNT(*) AS total_orders,
       COUNT(*) FILTER (WHERE status='PAID') AS paid_orders,
       COUNT(*) FILTER (WHERE status='USED') AS used_orders,
+
+      COUNT(*) FILTER (
+        WHERE status='USED' AND print_mode='BW'
+      ) AS used_bw_jobs,
+
+      COUNT(*) FILTER (
+        WHERE status='USED' AND print_mode='COLOR'
+      ) AS used_color_jobs,
+
       COALESCE(SUM(price) FILTER (WHERE status IN ('PAID','USED')), 0) AS total_revenue
     FROM jobs
     WHERE created_at BETWEEN $1 AND $2
