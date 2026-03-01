@@ -84,10 +84,16 @@ exports.handleDokuCallback = async (req) => {
   const status = body?.transaction?.status;
 
   if (status === "SUCCESS") {
+    logger.info({ 
+      receivedInvoice: body?.order?.invoice_number 
+    }, "DOKU_INVOICE_RECEIVED");
+
     const { rows } = await pool.query(
       "SELECT price, status FROM jobs WHERE code=$1",
       [code]
     );
+
+    logger.info({ rows }, "DOKU_JOB_LOOKUP");
 
     if (!rows.length) {
       throw { status: 404 };
