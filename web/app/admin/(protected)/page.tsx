@@ -66,7 +66,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Filters */}
-      <div className="bg-[#0b1b3a] border border-blue-400/20 rounded-2xl p-6 flex flex-wrap gap-4 items-end">
+      <div className="bg-[#0b1b3a] border border-blue-400/20 rounded-2xl p-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:items-end">
 
         <div className="flex flex-col text-sm">
           <label className="text-blue-300 mb-1">Start Date</label>
