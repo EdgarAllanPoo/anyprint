@@ -2,12 +2,14 @@ require("dotenv").config();
 
 const express = require('express');
 const cors = require('cors');
+const session = require("express-session");
 
 const requestLogger = require('./middleware/requestLogger');
 
 const jobsRoutes = require('./routes/job.routes');
 const paymentsRoutes = require('./routes/payment.routes');
 const adminRoutes = require('./routes/admin.routes');
+const adminAuthRoutes = require("./routes/adminAuth.routes");
 
 const app = express();
 
@@ -16,6 +18,20 @@ app.use(cors({
   // origin: process.env.FRONTEND_URL,
   credentials: true
 }));
+
+app.use(
+  session({
+    name: "anyprint_admin_session",
+    secret: process.env.SESSION_SECRET || "super_secret_key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // set true if using HTTPS in production
+      maxAge: 1000 * 60 * 60 * 4, // 4 hours
+    },
+  })
+);
 
 app.use(
   express.json({
@@ -31,6 +47,8 @@ app.use(requestLogger);
 
 app.use('/jobs', jobsRoutes);
 app.use('/payments', paymentsRoutes);
+
+app.use('/admin', adminAuthRoutes);
 app.use('/admin', adminRoutes);
 
 const PORT = process.env.PORT;

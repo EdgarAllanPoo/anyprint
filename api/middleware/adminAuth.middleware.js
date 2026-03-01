@@ -1,8 +1,7 @@
-const basicAuth = require('express-basic-auth');
+module.exports = (req, res, next) => {
+  if (!req.session || !req.session.admin) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
-module.exports = basicAuth({
-  users: {
-    [process.env.ADMIN_USER]: process.env.ADMIN_PASSWORD
-  },
-  challenge: true
-});
+  next();
+};

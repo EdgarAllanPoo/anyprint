@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 
 export default function AdminLayout({
@@ -10,6 +10,19 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/admin/logout`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    router.push("/admin/login");
+  };
 
   return (
     <div className="min-h-screen bg-[#050b1f] text-white flex">
@@ -44,9 +57,18 @@ export default function AdminLayout({
           />
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 text-xs text-blue-300 border-t border-blue-400/20">
-          Anyprint Admin
+        {/* Logout Section */}
+        <div className="p-4 border-t border-blue-400/20">
+          <button
+            onClick={handleLogout}
+            className="w-full px-4 py-3 rounded-xl text-sm font-medium bg-red-600/80 hover:bg-red-600 transition"
+          >
+            Logout
+          </button>
+
+          <div className="mt-4 text-xs text-blue-300 text-center">
+            Anyprint Admin
+          </div>
         </div>
       </aside>
 
