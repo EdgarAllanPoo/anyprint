@@ -19,16 +19,18 @@ app.use(cors({
   credentials: true
 }));
 
+app.set("trust proxy", 1);
 app.use(
   session({
     name: "anyprint_admin_session",
-    secret: process.env.SESSION_SECRET || "super_secret_key",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // set true if using HTTPS in production
-      maxAge: 1000 * 60 * 60 * 4, // 4 hours
+      secure: true,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 4,
     },
   })
 );
