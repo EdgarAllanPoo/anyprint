@@ -20,37 +20,39 @@ export default function OrdersPage() {
   const [status, setStatus] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [codeSearch, setCodeSearch] = useState("");
 
   const [loading, setLoading] = useState(false);
 
   const limit = 10;
 
+  const fetchOrders = async () => {
+    setLoading(true);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+
+    if (status) params.append("status", status);
+    if (startDate) params.append("start", startDate);
+    if (endDate) params.append("end", endDate);
+    if (codeSearch) params.append("code", codeSearch);
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/admin/orders?${params.toString()}`,
+      { credentials: "include" }
+    );
+
+    const data = await res.json();
+    setOrders(data.data);
+    setTotal(data.total);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
-      setLoading(true);
-
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-
-      if (status) params.append("status", status);
-      if (startDate) params.append("start", startDate);
-      if (endDate) params.append("end", endDate);
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/orders?${params.toString()}`,
-        { credentials: "include" }
-      );
-
-      const data = await res.json();
-      setOrders(data.data);
-      setTotal(data.total);
-      setLoading(false);
-    };
-
     fetchOrders();
-  }, [page, status, startDate, endDate]);
+  }, [page, status, startDate, endDate, codeSearch]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -66,6 +68,25 @@ export default function OrdersPage() {
     setStartDate("");
     setEndDate("");
     setPage(1);
+  };
+
+  const handleReverse = async (code: string) => {
+    const confirmAction = confirm(
+      "Are you sure you want to revert this order back to PAID?"
+    );
+
+    if (!confirmAction) return;
+
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/admin/orders/${code}/reverse`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    // Refresh orders
+    await fetchOrders();
   };
 
   const handleExport = () => {
@@ -93,6 +114,21 @@ export default function OrdersPage() {
 
       {/* Filters */}
       <div className="bg-[#0b1b3a] border border-blue-400/20 rounded-2xl p-6 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+
+        {/* Code Search */}
+        <div className="flex flex-col text-sm w-full lg:w-auto">
+          <label className="text-blue-300 mb-1">Search Code</label>
+          <input
+            type="text"
+            value={codeSearch}
+            onChange={(e) => {
+              setCodeSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Enter order code"
+            className="w-full bg-[#050b1f] border border-blue-400/30 rounded-lg px-3 py-2 text-white"
+          />
+        </div>
 
         {/* Status */}
         <div className="flex flex-col text-sm w-full lg:w-auto">
@@ -172,6 +208,7 @@ export default function OrdersPage() {
                 <th className="text-left p-4">Price</th>
                 <th className="text-left p-4">Status</th>
                 <th className="text-left p-4">Date</th>
+                <th className="text-left p-4">Actions</th>
               </tr>
             </thead>
             <tbody className="relative">
@@ -239,6 +276,17 @@ export default function OrdersPage() {
 
                         <td className="p-4 text-blue-200">
                           {new Date(order.created_at).toLocaleString()}
+                        </td>
+
+                        <td className="p-4">
+                          {order.status === "USED" && (
+                            <button
+                              onClick={() => handleReverse(order.code)}
+                              className="px-3 py-1 text-xs bg-red-600 hover:bg-red-500 rounded-lg transition"
+                            >
+                              Revert to PAID
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))

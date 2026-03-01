@@ -9,5 +9,6 @@ router.use(adminAuth);
 router.get('/reports/sales', adminController.getSalesSummary);
 router.get('/orders', adminController.getOrders);
 router.get('/orders/export', adminController.exportOrders);
+router.post('/orders/:code/reverse', adminController.reverseOrderStatus);
 
 module.exports = router;

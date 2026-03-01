@@ -36,3 +36,22 @@ exports.exportOrders = async (req, res) => {
     res.status(500).json({ error: "Failed to export orders" });
   }
 };
+
+exports.reverseOrderStatus = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    const updated = await reportService.reverseUsedToPaid(code);
+
+    if (updated === 0) {
+      return res.status(400).json({
+        error: "Order not found or not in USED state",
+      });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to reverse order" });
+  }
+};

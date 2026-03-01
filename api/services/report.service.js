@@ -51,6 +51,7 @@ exports.getOrders = async (query) => {
   const offset = (page - 1) * limit;
 
   const status = query.status || null;
+  const code = query.code || null;
 
   const { rows } = await pool.query(
     `
@@ -58,10 +59,11 @@ exports.getOrders = async (query) => {
     FROM jobs
     WHERE created_at BETWEEN $1 AND $2
       AND ($3::text IS NULL OR status = $3)
+      AND ($4::text IS NULL OR code ILIKE '%' || $4 || '%')
     ORDER BY created_at DESC
-    LIMIT $4 OFFSET $5
+    LIMIT $5 OFFSET $6
     `,
-    [start, end, status, limit, offset]
+    [start, end, status, code, limit, offset]
   );
 
   const countResult = await pool.query(
@@ -69,8 +71,9 @@ exports.getOrders = async (query) => {
     SELECT COUNT(*) FROM jobs
     WHERE created_at BETWEEN $1 AND $2
       AND ($3::text IS NULL OR status = $3)
+      AND ($4::text IS NULL OR code ILIKE '%' || $4 || '%')
     `,
-    [start, end, status]
+    [start, end, status, code]
   );
 
   return {
@@ -164,4 +167,19 @@ exports.exportOrders = async (query) => {
   const filename = `orders_${start}_${end}${status ? "_" + status : ""}.csv`;
 
   return { csv, filename };
+};
+
+exports.reverseUsedToPaid = async (code) => {
+  const { rowCount } = await pool.query(
+    `
+    UPDATE jobs
+    SET status = 'PAID',
+        printed_at = NULL
+    WHERE code = $1
+      AND status = 'USED'
+    `,
+    [code]
+  );
+
+  return rowCount;
 };
