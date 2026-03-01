@@ -83,11 +83,12 @@ exports.handleDokuCallback = async (req) => {
   const code = body?.order?.invoice_number;
   const status = body?.transaction?.status;
 
-  if (status === "SUCCESS") {
-    logger.info({ 
-      receivedInvoice: body?.order?.invoice_number 
-    }, "DOKU_INVOICE_RECEIVED");
+  logger.info({
+    code: code,
+    status: status,
+  }, 'DOKU_PAYMENT_CALLBACK_RECEIVED');
 
+  if (status === "SUCCESS") {
     const { rows } = await pool.query(
       "SELECT price, status FROM jobs WHERE code=$1",
       [code]
