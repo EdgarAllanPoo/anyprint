@@ -27,7 +27,7 @@ export default function RootLayout({
       <head>
         <script
           src={`${process.env.MIDTRANS_SNAP_URL}`}
-          data-client-key={`${process.env.MIDTRANS_CLIENT_KEY}`}
+          data-client-key={`${process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}`}
         ></script>
       </head>
 
