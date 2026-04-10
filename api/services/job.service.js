@@ -141,3 +141,19 @@ exports.getJob = async (code) => {
     printMode: job.print_mode
   };
 };
+
+exports.getJobStatus = async (code) => {
+  const { rows } = await pool.query(
+    'SELECT code, status FROM jobs WHERE code=$1',
+    [code]
+  );
+
+  if (!rows.length) {
+    throw { status: 404, message: "Not found" };
+  }
+
+  return {
+    code: rows[0].code,
+    status: rows[0].status
+  };
+};
