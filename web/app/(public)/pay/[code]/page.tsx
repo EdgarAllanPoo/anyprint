@@ -11,14 +11,19 @@ export default function Pay() {
   const router = useRouter()
   const opened = useRef(false)
 
-  async function loadJokulScript() {
-    if ((window as any).loadJokulCheckout) return
+  async function loadSnapScript() {
+    if ((window as any).snap) return
 
     const script = document.createElement("script")
     script.src =
-      process.env.NEXT_PUBLIC_DOKU_ENV === "production"
-        ? "https://jokul.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.js"
-        : "https://sandbox.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.js"
+      process.env.NEXT_PUBLIC_MIDTRANS_ENV === "production"
+        ? "https://app.midtrans.com/snap/snap.js"
+        : "https://app.sandbox.midtrans.com/snap/snap.js"
+
+    script.setAttribute(
+      "data-client-key",
+      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!
+    )
 
     document.body.appendChild(script)
 
@@ -37,16 +42,28 @@ export default function Pay() {
     })
       .then(res => res.json())
       .then(async data => {
-        if (data.provider !== "DOKU") {
+        if (data.provider !== "MIDTRANS") {
           alert("Unsupported payment provider")
           router.push("/")
           return
         }
 
-        await loadJokulScript()
+        await loadSnapScript()
 
         // @ts-ignore
-        window.loadJokulCheckout(data.payment_url)
+        window.snap.pay(data.token, {
+          onSuccess: function () {
+            router.push(`/done/${code}`)
+          },
+          onPending: function () {
+            console.log("Payment not done")
+            router.push(`/done/${code}`)
+          },
+          onError: function () {
+            alert("Payment failed")
+            router.push(`/`)
+          }
+        })
       })
       .catch(() => {
         alert("Failed to initiate payment")
@@ -56,7 +73,6 @@ export default function Pay() {
 
   return (
     <div className="min-h-screen bg-[#050b1f] flex items-center justify-center p-4 text-white">
-
       <div className="bg-[#0b1b3a] px-8 pt-6 pb-8 rounded-2xl shadow-2xl w-full max-w-md space-y-5 text-center">
 
         <div className="flex justify-center mb-6">
@@ -92,4 +108,3 @@ export default function Pay() {
     </div>
   )
 }
-
