@@ -11,8 +11,8 @@ const { convertToPdf } = require("../utils/convertToPdf");
 const { convertImageToPdf } = require("../utils/convertImageToPdf");
 
 const PRICE = {
-  BW: 750,
-  COLOR: 1500
+  BW: 1000,
+  COLOR: 2000
 };
 
 const allowedTypes = [
