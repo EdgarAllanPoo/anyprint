@@ -1,7 +1,7 @@
 "use client"
 
 export default function WhatsappFloating() {
-  const phone = "447549588919"
+  const phone = "6285121546801"
   const message = encodeURIComponent(
     "Hi Anyprint, I need help with my print order."
   )
