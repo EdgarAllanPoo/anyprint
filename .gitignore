@@ -18,3 +18,6 @@ out/
 
 # Docker volumes
 data/
+
+# PM2 logs (written by deploy.sh / ecosystem.config.js)
+logs/

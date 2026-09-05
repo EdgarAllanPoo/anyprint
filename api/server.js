@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const session = require("express-session");
 
+const pool = require('./config/db');
 const requestLogger = require('./middleware/requestLogger');
 
 const jobsRoutes = require('./routes/job.routes');
@@ -14,8 +15,8 @@ const adminAuthRoutes = require("./routes/adminAuth.routes");
 const app = express();
 
 app.use(cors({
-  origin: [/anyprint\.id$/],
-  // origin: process.env.FRONTEND_URL,
+  // origin: [/anyprint\.id$/],
+  origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
@@ -44,6 +45,17 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// Above requestLogger so deploy/uptime probes don't fill the logs.
+// Touches the DB, so a 200 means "app is up and can reach Postgres".
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: "ok" });
+  } catch (err) {
+    res.status(503).json({ status: "degraded", error: "database unreachable" });
+  }
+});
 
 app.use(requestLogger);
 
