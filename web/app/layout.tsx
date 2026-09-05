@@ -24,13 +24,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <script
-          src={`${process.env.MIDTRANS_SNAP_URL}`}
-          data-client-key={`${process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}`}
-        ></script>
-      </head>
-
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>

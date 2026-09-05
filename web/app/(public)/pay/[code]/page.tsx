@@ -11,19 +11,14 @@ export default function Pay() {
   const router = useRouter()
   const opened = useRef(false)
 
-  async function loadSnapScript() {
-    if ((window as any).snap) return
+  async function loadJokulScript() {
+    if ((window as any).loadJokulCheckout) return
 
     const script = document.createElement("script")
     script.src =
-      process.env.NEXT_PUBLIC_MIDTRANS_ENV === "production"
-        ? "https://app.midtrans.com/snap/snap.js"
-        : "https://app.sandbox.midtrans.com/snap/snap.js"
-
-    script.setAttribute(
-      "data-client-key",
-      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!
-    )
+      process.env.NEXT_PUBLIC_DOKU_ENV === "production"
+        ? "https://jokul.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.js"
+        : "https://sandbox.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.js"
 
     document.body.appendChild(script)
 
@@ -42,28 +37,16 @@ export default function Pay() {
     })
       .then(res => res.json())
       .then(async data => {
-        if (data.provider !== "MIDTRANS") {
+        if (data.provider !== "DOKU") {
           alert("Unsupported payment provider")
           router.push("/")
           return
         }
 
-        await loadSnapScript()
+        await loadJokulScript()
 
         // @ts-ignore
-        window.snap.pay(data.token, {
-          onSuccess: function () {
-            router.push(`/done/${code}`)
-          },
-          onPending: function () {
-            console.log("Payment not done")
-            router.push(`/done/${code}`)
-          },
-          onError: function () {
-            alert("Payment failed")
-            router.push(`/`)
-          }
-        })
+        window.loadJokulCheckout(data.payment_url)
       })
       .catch(() => {
         alert("Failed to initiate payment")

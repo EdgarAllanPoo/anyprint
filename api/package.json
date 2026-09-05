@@ -12,11 +12,11 @@
   "type": "commonjs",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.967.0",
+    "axios": "^1.20.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "midtrans-client": "^1.4.3",
     "multer": "^2.0.2",
     "nanoid": "^5.1.6",
     "page-count": "^0.0.4",

@@ -1,49 +1,11 @@
-const crypto = require('crypto');
 const pool = require('../config/db');
 const logger = require('../config/logger');
-const payments = require('../payments');
+const payments = require('../payments/doku');
 
 const {
   generateDigest,
   generateSignature
 } = require('../utils/dokuSignature');
-
-exports.handleMidtransCallback = async (notification) => {
-  const code = notification.order_id;
-
-  logger.info({
-    code,
-    status: notification.transaction_status,
-    midtransId: notification.transaction_id
-  }, 'PAYMENT_CALLBACK_RECEIVED');
-
-  const signature = crypto.createHash('sha512')
-    .update(
-      notification.order_id +
-      notification.status_code +
-      notification.gross_amount +
-      process.env.MIDTRANS_SERVER_KEY
-    )
-    .digest('hex');
-
-  if (signature !== notification.signature_key) {
-    throw { status: 403 };
-  }
-
-  if (notification.transaction_status === 'settlement') {
-    await pool.query(
-      `UPDATE jobs 
-       SET status='PAID', paid_at=NOW(), payment_ref=$1 
-       WHERE code=$2`,
-      [notification.transaction_id, code]
-    );
-
-    logger.info({
-      code,
-      midtransId: notification.transaction_id
-    }, 'JOB_PAID');
-  }
-};
 
 exports.handleDokuCallback = async (req) => {
   const body = req.body;
@@ -93,8 +55,6 @@ exports.handleDokuCallback = async (req) => {
       "SELECT price, status FROM jobs WHERE code=$1",
       [code]
     );
-
-    logger.info({ rows }, "DOKU_JOB_LOOKUP");
 
     if (!rows.length) {
       throw { status: 404 };
