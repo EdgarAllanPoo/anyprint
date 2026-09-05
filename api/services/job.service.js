@@ -106,31 +106,35 @@ exports.createJob = async (req) => {
 };
 
 exports.getJob = async (code) => {
+  // Claim the job in a single statement so two concurrent requests can never
+  // both walk away with the file. Only one UPDATE can move PAID -> USED.
   const { rows } = await pool.query(
-    'SELECT * FROM jobs WHERE code=$1',
+    `UPDATE jobs
+     SET status='USED', printed_at=NOW()
+     WHERE code=$1 AND status='PAID'
+     RETURNING code, filename, file_url, copies, pages, print_mode`,
     [code]
   );
 
   if (!rows.length) {
-    throw { status: 404, message: "Not found" };
-  }
+    // Nothing was claimed. Look up why so the caller still gets an accurate status.
+    const { rows: existing } = await pool.query(
+      'SELECT status FROM jobs WHERE code=$1',
+      [code]
+    );
 
-  const job = rows[0];
+    if (!existing.length) {
+      throw { status: 404, message: "Not found" };
+    }
 
-  if (job.status === 'USED') {
-    throw { status: 409, message: "Job already printed" };
-  }
+    if (existing[0].status === 'USED') {
+      throw { status: 409, message: "Job already printed" };
+    }
 
-  if (job.status !== 'PAID') {
     throw { status: 402, message: "Job not paid yet" };
   }
 
-  await pool.query(
-    `UPDATE jobs 
-     SET status='USED', printed_at=NOW()
-     WHERE code=$1 AND status='PAID'`,
-    [job.code]
-  );
+  const job = rows[0];
 
   return {
     code: job.code,
