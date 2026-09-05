@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
+    "cleanup:storage": "node scripts/cleanupStorage.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
