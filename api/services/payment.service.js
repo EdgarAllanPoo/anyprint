@@ -7,6 +7,22 @@ const {
   generateSignature
 } = require('../utils/dokuSignature');
 
+// Doku returns the acquirer reference inside a per-channel object whose name
+// depends on the payment method, so the QRIS branch can't assume emoney_payment.
+// Try the known shapes, then fall back to the transaction identifier, which is
+// present on every notification. Returns null if the payload carries none of them.
+function extractPaymentRef(body) {
+  const candidates = [
+    body?.qris_payment?.approval_code,
+    body?.emoney_payment?.approval_code,
+    body?.virtual_account_payment?.identifier,
+    body?.transaction?.original_request_id,
+    body?.transaction?.identifier
+  ];
+
+  return candidates.find(ref => typeof ref === "string" && ref.length > 0) || null;
+}
+
 exports.handleDokuCallback = async (req) => {
   const body = req.body;
   const bodyString = req.rawBody;
@@ -64,16 +80,32 @@ exports.handleDokuCallback = async (req) => {
       throw { status: 400 };
     }
 
-    await pool.query(
+    const paymentRef = extractPaymentRef(body);
+
+    if (!paymentRef) {
+      // The payment is real either way, so still mark it PAID - but surface the
+      // gap instead of silently storing NULL. Keys only, never payload values.
+      logger.warn({
+        code,
+        bodyKeys: Object.keys(body || {})
+      }, "DOKU_PAYMENT_REF_MISSING");
+    }
+
+    const { rowCount } = await pool.query(
       `UPDATE jobs
        SET status='PAID',
            paid_at=NOW(),
            payment_ref=$1
        WHERE code=$2 AND status!='PAID'`,
-      [body.emoney_payment?.approval_code, code]
+      [paymentRef, code]
     );
 
-    logger.info({ code, provider: "DOKU" }, "JOB_PAID");
+    logger.info({
+      code,
+      provider: "DOKU",
+      paymentRef,
+      updated: rowCount
+    }, "JOB_PAID");
   }
 };
 

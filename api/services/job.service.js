@@ -15,6 +15,11 @@ const PRICE = {
   COLOR: 2000
 };
 
+const MAX_COPIES = 100;
+
+// price is an INTEGER column, so the total has to stay inside int4.
+const MAX_PRICE = 2147483647;
+
 const allowedTypes = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -33,8 +38,17 @@ exports.createJob = async (req) => {
     throw { status: 400, message: "Unsupported file type" };
   }
 
-  const copies = parseInt(req.body.copies || "1");
+  // Number() rather than parseInt() so trailing garbage ("2abc") is rejected
+  // instead of silently truncated to a valid-looking number.
+  const copies = Number(req.body.copies || "1");
   const printMode = (req.body.printMode || "BW").toUpperCase();
+
+  if (!Number.isInteger(copies) || copies < 1 || copies > MAX_COPIES) {
+    throw {
+      status: 400,
+      message: `Copies must be a whole number between 1 and ${MAX_COPIES}`
+    };
+  }
 
   if (!PRICE[printMode]) {
     throw { status: 400, message: "Invalid print mode" };
@@ -71,6 +85,10 @@ exports.createJob = async (req) => {
 
     const pricePerPage = PRICE[printMode];
     const price = copies * pages * pricePerPage;
+
+    if (price > MAX_PRICE) {
+      throw { status: 400, message: "Document is too large to price" };
+    }
 
     const code = await generateUniqueNumericCode(pool, 8);
     const objectName = `${code}-${filename}`;
