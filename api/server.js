@@ -9,6 +9,7 @@ const requestLogger = require('./middleware/requestLogger');
 
 const jobsRoutes = require('./routes/job.routes');
 const paymentsRoutes = require('./routes/payment.routes');
+const pricingRoutes = require('./routes/pricing.routes');
 const adminRoutes = require('./routes/admin.routes');
 const adminAuthRoutes = require("./routes/adminAuth.routes");
 
@@ -61,6 +62,7 @@ app.use(requestLogger);
 
 app.use('/jobs', jobsRoutes);
 app.use('/payments', paymentsRoutes);
+app.use('/prices', pricingRoutes);
 
 app.use('/admin', adminAuthRoutes);
 app.use('/admin', adminRoutes);

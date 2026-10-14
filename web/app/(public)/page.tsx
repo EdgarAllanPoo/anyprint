@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 
 const ALLOWED_TYPES = [
@@ -18,6 +18,14 @@ export default function Home() {
   const [job, setJob] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [prices, setPrices] = useState<{ BW?: number; COLOR?: number }>({})
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/prices`)
+      .then(res => (res.ok ? res.json() : {}))
+      .then(setPrices)
+      .catch(() => {})
+  }, [])
 
   async function submit() {
     if (!file) return
@@ -151,7 +159,7 @@ export default function Home() {
               }`}
             >
               Black & White
-              <div className="text-xs opacity-80">Rp1000 / page</div>
+              <div className="text-xs opacity-80">{formatPerPage(prices.BW)}</div>
             </button>
 
             <button
@@ -163,7 +171,7 @@ export default function Home() {
               }`}
             >
               Color
-              <div className="text-xs opacity-80">Rp2000 / page</div>
+              <div className="text-xs opacity-80">{formatPerPage(prices.COLOR)}</div>
             </button>
           </div>
         </div>
@@ -230,4 +238,8 @@ export default function Home() {
       </div>
     </div>
   )
+}
+
+function formatPerPage(price?: number) {
+  return price ? `Rp${price} / page` : "\u00a0"
 }

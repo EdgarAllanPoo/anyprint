@@ -75,6 +75,12 @@ export default function AdminLayout({
             active={pathname.startsWith("/admin/orders")}
             onClick={() => setSidebarOpen(false)}
           />
+          <NavItem
+            href="/admin/pricing"
+            label="Pricing"
+            active={pathname.startsWith("/admin/pricing")}
+            onClick={() => setSidebarOpen(false)}
+          />
         </nav>
 
         {/* Logout */}

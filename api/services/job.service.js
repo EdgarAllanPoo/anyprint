@@ -9,11 +9,7 @@ const s3 = require('../config/storage');
 const { generateUniqueNumericCode } = require("../utils/codeGenerator");
 const { convertToPdf } = require("../utils/convertToPdf");
 const { convertImageToPdf } = require("../utils/convertImageToPdf");
-
-const PRICE = {
-  BW: 1000,
-  COLOR: 2000
-};
+const pricingService = require("./pricing.service");
 
 const MAX_COPIES = 100;
 
@@ -50,7 +46,10 @@ exports.createJob = async (req) => {
     };
   }
 
-  if (!PRICE[printMode]) {
+  // Lock in the price at upload time; the job keeps it even if an admin
+  // changes prices before payment.
+  const pricePerPage = await pricingService.getPricePerPage(printMode);
+  if (!pricePerPage) {
     throw { status: 400, message: "Invalid print mode" };
   }
 
@@ -83,7 +82,6 @@ exports.createJob = async (req) => {
 
     const pages = await PdfCounter.count(pdfBuffer);
 
-    const pricePerPage = PRICE[printMode];
     const price = copies * pages * pricePerPage;
 
     if (price > MAX_PRICE) {
